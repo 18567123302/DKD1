@@ -74,49 +74,49 @@ if st.button("Predict (预测)"):
 
     st.write(advice)
     
-   
-    # 创建SHAP解释器，基于树模型
-    explainer = shap.TreeExplainer(model)
-    #计算shap值
-    shap_values = explainer.shap_values(pd.DataFrame([feature_values], columns=feature_names))
+      # Calculate SHAP values and display force plot
+X = pd.DataFrame([feature_values], columns=feature_names)
 
-    shap.force_plot(explainer.expected_value, shap_values[0], pd.DataFrame([feature_values], columns=feature_names), matplotlib=True)
-    plt.savefig("shap_force_plot.png", bbox_inches='tight', dpi=1200)
+try:
+    # 对 XGBClassifier 更稳：解释 booster
+    explainer = shap.TreeExplainer(model.get_booster())
 
-    st.image("shap_force_plot.png")
+    shap_values = explainer.shap_values(X)
+
+    # 二分类时 shap_values 可能是 list: [class0, class1]
+    if isinstance(shap_values, list):
+        shap_vec = shap_values[1][0]  # 取正类(1)的解释
+        base_value = explainer.expected_value
+        if isinstance(base_value, (list, np.ndarray)):
+            base_value = base_value[1]
+    else:
+        shap_vec = shap_values[0]
+        base_value = explainer.expected_value
+        if isinstance(base_value, (list, np.ndarray)):
+            base_value = base_value[0]
+
+    plt.figure()
+    shap.force_plot(base_value, shap_vec, X.iloc[0, :], matplotlib=True)
+    st.pyplot(plt.gcf(), clear_figure=True)
+
+except Exception as e:
+    st.warning(f"SHAP plot could not be generated: {e}")
+
+    # # 创建SHAP解释器，基于树模型
+    # explainer = shap.TreeExplainer(model)
+    # #计算shap值
+    # shap_values = explainer.shap_values(pd.DataFrame([feature_values], columns=feature_names))
+
+    # shap.force_plot(explainer.expected_value, shap_values[0], pd.DataFrame([feature_values], columns=feature_names), matplotlib=True)
+    # plt.savefig("shap_force_plot.png", bbox_inches='tight', dpi=1200)
+
+    # st.image("shap_force_plot.png")
 
 
 
 
 
     
-#    # Calculate SHAP values and display force plot
-# X = pd.DataFrame([feature_values], columns=feature_names)
-
-# try:
-#     # 对 XGBClassifier 更稳：解释 booster
-#     explainer = shap.TreeExplainer(model.get_booster())
-
-#     shap_values = explainer.shap_values(X)
-
-#     # 二分类时 shap_values 可能是 list: [class0, class1]
-#     if isinstance(shap_values, list):
-#         shap_vec = shap_values[1][0]  # 取正类(1)的解释
-#         base_value = explainer.expected_value
-#         if isinstance(base_value, (list, np.ndarray)):
-#             base_value = base_value[1]
-#     else:
-#         shap_vec = shap_values[0]
-#         base_value = explainer.expected_value
-#         if isinstance(base_value, (list, np.ndarray)):
-#             base_value = base_value[0]
-
-#     plt.figure()
-#     shap.force_plot(base_value, shap_vec, X.iloc[0, :], matplotlib=True)
-#     st.pyplot(plt.gcf(), clear_figure=True)
-
-# except Exception as e:
-#     st.warning(f"SHAP plot could not be generated: {e}")
 
 
 
